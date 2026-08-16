@@ -8,7 +8,7 @@
 # # 0. Setup Paths
 
 # In[1]:
-
+import subprocess
 
 WORKSPACE_PATH = 'Tensorflow/workspace'
 SCRIPTS_PATH = 'Tensorflow/scripts'
@@ -41,8 +41,10 @@ with open(ANNOTATION_PATH + '\label_map.pbtxt', 'w') as f:
 # In[3]:
 
 
-get_ipython().system("python {SCRIPTS_PATH + '/generate_tfrecord.py'} -x {IMAGE_PATH + '/train'} -l {ANNOTATION_PATH + '/label_map.pbtxt'} -o {ANNOTATION_PATH + '/train.record'}")
-get_ipython().system("python {SCRIPTS_PATH + '/generate_tfrecord.py'} -x{IMAGE_PATH + '/test'} -l {ANNOTATION_PATH + '/label_map.pbtxt'} -o {ANNOTATION_PATH + '/test.record'}")
+
+
+subprocess.run(f"python {SCRIPTS_PATH + '/generate_tfrecord.py'} -x {IMAGE_PATH + '/train'} -l {ANNOTATION_PATH + '/label_map.pbtxt'} -o {ANNOTATION_PATH + '/train.record'}", shell=True)
+subprocess.run(f"python {SCRIPTS_PATH + '/generate_tfrecord.py'} -x{IMAGE_PATH + '/test'} -l {ANNOTATION_PATH + '/label_map.pbtxt'} -o {ANNOTATION_PATH + '/test.record'}")
 
 
 # # 3. Download TF Models Pretrained Models from Tensorflow Model Zoo
@@ -50,7 +52,7 @@ get_ipython().system("python {SCRIPTS_PATH + '/generate_tfrecord.py'} -x{IMAGE_P
 # In[4]:
 
 
-get_ipython().system('cd Tensorflow && git clone https://github.com/tensorflow/models')
+subprocess.run(f'cd Tensorflow && git clone https://github.com/tensorflow/models')
 
 
 # In[6]:
@@ -72,8 +74,8 @@ CUSTOM_MODEL_NAME = 'my_ssd_mobnet'
 # In[47]:
 
 
-get_ipython().system("mkdir {'Tensorflow\\workspace\\models\\\\'+CUSTOM_MODEL_NAME}")
-get_ipython().system("cp {PRETRAINED_MODEL_PATH+'/ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8/pipeline.config'} {MODEL_PATH+'/'+CUSTOM_MODEL_NAME}")
+subprocess.run(f"mkdir {'Tensorflow\\workspace\\models\\\\'+CUSTOM_MODEL_NAME}", shell=True)
+subprocess.run(f"cp {PRETRAINED_MODEL_PATH+'/ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8/pipeline.config'} {MODEL_PATH+'/'+CUSTOM_MODEL_NAME}", shell=True)
 
 
 # # 5. Update Config For Transfer Learning
