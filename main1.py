@@ -7,7 +7,6 @@
 
 # # 0. Setup Paths
 
-# In[1]:
 import subprocess
 
 WORKSPACE_PATH = 'Tensorflow/workspace'
@@ -23,12 +22,10 @@ CHECKPOINT_PATH = MODEL_PATH+'/my_ssd_mobnet/'
 
 # # 1. Create Label Map
 
-# In[2]:
-
-
 labels = [{'name':'Mask', 'id':1}, {'name':'NoMask', 'id':2}]
 
-with open(ANNOTATION_PATH + '\label_map.pbtxt', 'w') as f:
+# FIX: was '\label_map.pbtxt' (Windows-style backslash) -> use '/' for Linux paths
+with open(ANNOTATION_PATH + '/label_map.pbtxt', 'w') as f:
     for label in labels:
         f.write('item { \n')
         f.write('\tname:\'{}\'\n'.format(label['name']))
@@ -38,25 +35,15 @@ with open(ANNOTATION_PATH + '\label_map.pbtxt', 'w') as f:
 
 # # 2. Create TF records
 
-# In[3]:
-
-
-
-
 subprocess.run(f"python {SCRIPTS_PATH + '/generate_tfrecord.py'} -x {IMAGE_PATH + '/train'} -l {ANNOTATION_PATH + '/label_map.pbtxt'} -o {ANNOTATION_PATH + '/train.record'}", shell=True)
-subprocess.run(f"python {SCRIPTS_PATH + '/generate_tfrecord.py'} -x{IMAGE_PATH + '/test'} -l {ANNOTATION_PATH + '/label_map.pbtxt'} -o {ANNOTATION_PATH + '/test.record'}")
+# FIX: was missing a space after -x and missing shell=True
+subprocess.run(f"python {SCRIPTS_PATH + '/generate_tfrecord.py'} -x {IMAGE_PATH + '/test'} -l {ANNOTATION_PATH + '/label_map.pbtxt'} -o {ANNOTATION_PATH + '/test.record'}", shell=True)
 
 
 # # 3. Download TF Models Pretrained Models from Tensorflow Model Zoo
 
-# In[4]:
-
-
-subprocess.run(f'cd Tensorflow && git clone https://github.com/tensorflow/models')
-
-
-# In[6]:
-
+# FIX: was missing shell=True
+subprocess.run(f'cd Tensorflow && git clone https://github.com/tensorflow/models', shell=True)
 
 #wget.download('http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8.tar.gz')
 #!mv ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8.tar.gz {PRETRAINED_MODEL_PATH}
@@ -65,59 +52,31 @@ subprocess.run(f'cd Tensorflow && git clone https://github.com/tensorflow/models
 
 # # 4. Copy Model Config to Training Folder
 
-# In[7]:
-
-
 CUSTOM_MODEL_NAME = 'my_ssd_mobnet' 
 
-
-# In[47]:
-
-
-subprocess.run(f"mkdir {'Tensorflow\\workspace\\models\\\\'+CUSTOM_MODEL_NAME}", shell=True)
+# FIX: was 'Tensorflow\\workspace\\models\\\\'+CUSTOM_MODEL_NAME (backslashes not allowed
+# inside f-string braces, and wrong path separator for Linux anyway).
+# Build the path as a plain variable first, using forward slashes.
+custom_model_dir = MODEL_PATH + '/' + CUSTOM_MODEL_NAME
+subprocess.run(f"mkdir -p {custom_model_dir}", shell=True)
 subprocess.run(f"cp {PRETRAINED_MODEL_PATH+'/ssd_mobilenet_v2_fpnlite_320x320_coco17_tpu-8/pipeline.config'} {MODEL_PATH+'/'+CUSTOM_MODEL_NAME}", shell=True)
 
 
 # # 5. Update Config For Transfer Learning
-
-# In[1]:
-
 
 import tensorflow as tf
 from object_detection.utils import config_util
 from object_detection.protos import pipeline_pb2
 from google.protobuf import text_format
 
-
-# In[8]:
-
-
 CONFIG_PATH = MODEL_PATH+'/'+CUSTOM_MODEL_NAME+'/pipeline.config'
-
-
-# In[55]:
-
 
 config = config_util.get_configs_from_pipeline_file(CONFIG_PATH)
 
-
-# In[56]:
-
-
-config
-
-
-# In[52]:
-
-
 pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
-with tf.io.gfile.GFile(CONFIG_PATH, "r") as f:                                                                                                                                                                                                                     
-    proto_str = f.read()                                                                                                                                                                                                                                          
-    text_format.Merge(proto_str, pipeline_config)  
-
-
-# In[53]:
-
+with tf.io.gfile.GFile(CONFIG_PATH, "r") as f:
+    proto_str = f.read()
+    text_format.Merge(proto_str, pipeline_config)
 
 pipeline_config.model.ssd.num_classes = 2
 pipeline_config.train_config.batch_size = 4
@@ -128,36 +87,22 @@ pipeline_config.train_input_reader.tf_record_input_reader.input_path[:] = [ANNOT
 pipeline_config.eval_input_reader[0].label_map_path = ANNOTATION_PATH + '/label_map.pbtxt'
 pipeline_config.eval_input_reader[0].tf_record_input_reader.input_path[:] = [ANNOTATION_PATH + '/test.record']
 
-
-# In[54]:
-
-
-config_text = text_format.MessageToString(pipeline_config)                                                                                                                                                                                                        
-with tf.io.gfile.GFile(CONFIG_PATH, "wb") as f:                                                                                                                                                                                                                     
-    f.write(config_text)   
+config_text = text_format.MessageToString(pipeline_config)
+with tf.io.gfile.GFile(CONFIG_PATH, "wb") as f:
+    f.write(config_text)
 
 
 # # 6. Train the model
-
-# In[58]:
-
 
 print("""python {}/research/object_detection/model_main_tf2.py --model_dir={}/{} --pipeline_config_path={}/{}/pipeline.config --num_train_steps=5000""".format(APIMODEL_PATH, MODEL_PATH,CUSTOM_MODEL_NAME,MODEL_PATH,CUSTOM_MODEL_NAME))
 
 
 # # 7. Load Train Model From Checkpoint
 
-# In[2]:
-
-
 import os
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as viz_utils
 from object_detection.builders import model_builder
-
-
-# In[9]:
-
 
 # Load pipeline config and build a detection model
 configs = config_util.get_configs_from_pipeline_file(CONFIG_PATH)
@@ -177,38 +122,29 @@ def detect_fn(image):
 
 # # 8. Detect in Real-Time
 
-# In[10]:
-
-
-import cv2 
+import cv2
 import numpy as np
-
-
-# In[11]:
-
 
 category_index = label_map_util.create_category_index_from_labelmap(ANNOTATION_PATH+'/label_map.pbtxt')
 
-
-# In[105]:
-
-
-cap.release()
-
-
-# In[12]:
-
+# NOTE: The two cells below were removed because they were Jupyter-only artifacts
+# from out-of-order interactive execution (In[105] ran before In[12] in the
+# original notebook, calling cap.release() before cap existed). In a linear
+# script they would crash immediately. The real capture setup below is what
+# actually matters.
+#
+# NOTE: This next section opens a physical webcam (cv2.VideoCapture(0)) and
+# will fail or hang in any environment without a camera attached, including
+# this Docker container running on a remote server. That's expected — this
+# script is written for local/desktop use with a webcam, not headless
+# server deployment.
 
 # Setup capture
 cap = cv2.VideoCapture(0)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-
-# In[ ]:
-
-
-while True: 
+while True:
     ret, frame = cap.read()
     image_np = np.array(frame)
 
@@ -242,22 +178,3 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         cap.release()
         break
-
-
-# In[42]:
-
-
-detections = detect_fn(input_tensor)
-
-
-# In[67]:
-
-
-from matplotlib import pyplot as plt
-
-
-# In[ ]:
-
-
-
-
