@@ -3,7 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/RealTimeObjectDetection" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/RealTimeObjectDetection/Tensorflow/models" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/RealTimeObjectDetection/Tensorflow/workspace/models" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Tensorflow/models" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Tensorflow/workspace/models" vcs="Git" />
   </component>
 </project>
